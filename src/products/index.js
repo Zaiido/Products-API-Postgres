@@ -1,12 +1,23 @@
 import Express from 'express'
 import createHttpError from 'http-errors'
 import ProductsModel from './model.js'
+import { Op } from 'sequelize'
 
 const productsRouter = Express.Router()
 
 productsRouter.get("/", async (request, response, next) => {
     try {
-        const products = await ProductsModel.findAll()
+        const query = {}
+        if (request.query.name) query.name = { [Op.iLike]: `%${request.query.name}%` }
+        if (request.query.description) query.description = { [Op.iLike]: `%${request.query.description}%` }
+        if (request.query.minPrice && request.query.maxPrice) query.price = { [Op.between]: [request.query.minPrice, request.query.maxPrice] }
+        if (request.query.category) query.category = { [Op.eq]: request.query.category }
+        const products = await ProductsModel.findAll({
+            where: { ...query },
+            order: [request.query.columnToSort && request.query.sortDirection ? [request.query.columnToSort, request.query.sortDirection] : ["price", "ASC"]],
+            offset: request.query.offset,
+            limit: request.query.limit
+        })
         response.send(products)
     } catch (error) {
         next(error)
