@@ -8,17 +8,31 @@ const productsRouter = Express.Router()
 productsRouter.get("/", async (request, response, next) => {
     try {
         const query = {}
-        if (request.query.name) query.name = { [Op.iLike]: `%${request.query.name}%` }
-        if (request.query.description) query.description = { [Op.iLike]: `%${request.query.description}%` }
         if (request.query.minPrice && request.query.maxPrice) query.price = { [Op.between]: [request.query.minPrice, request.query.maxPrice] }
         if (request.query.category) query.category = { [Op.iLike]: `%${request.query.category}%` }
-        const products = await ProductsModel.findAll({
-            where: { ...query },
+        const { count, rows } = await ProductsModel.findAndCountAll({
+            where: {
+                ...query,
+                ...request.query.search ? { [Op.or]: [{ name: { [Op.iLike]: `%${request.query.search}%` } }, { description: { [Op.iLike]: `%${request.query.search}%` } }] } : ''
+            },
             order: [request.query.columnToSort && request.query.sortDirection ? [request.query.columnToSort, request.query.sortDirection] : ["price", "ASC"]],
             offset: request.query.offset,
             limit: request.query.limit
         })
-        response.send(products)
+
+        const prevOffset = parseInt(request.query.offset) - parseInt(request.query.limit)
+        const nextOffset = parseInt(request.query.offset) + parseInt(request.query.limit)
+
+        response.send(
+            {
+                total: count,
+                pages: Math.ceil(count / request.query.limit),
+                links: {
+                    prevLink: prevOffset >= 0 ? `${process.env.BE_URL}/products?limit=${request.query.limit}&offset=${prevOffset}` : null,
+                    nextLink: nextOffset <= count ? `${process.env.BE_URL}/products?limit=${request.query.limit}&offset=${nextOffset}` : null
+                },
+                products: rows
+            })
     } catch (error) {
         next(error)
     }
