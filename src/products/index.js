@@ -11,7 +11,7 @@ productsRouter.get("/", async (request, response, next) => {
         if (request.query.name) query.name = { [Op.iLike]: `%${request.query.name}%` }
         if (request.query.description) query.description = { [Op.iLike]: `%${request.query.description}%` }
         if (request.query.minPrice && request.query.maxPrice) query.price = { [Op.between]: [request.query.minPrice, request.query.maxPrice] }
-        if (request.query.category) query.category = { [Op.eq]: request.query.category }
+        if (request.query.category) query.category = { [Op.iLike]: `%${request.query.category}%` }
         const products = await ProductsModel.findAll({
             where: { ...query },
             order: [request.query.columnToSort && request.query.sortDirection ? [request.query.columnToSort, request.query.sortDirection] : ["price", "ASC"]],
