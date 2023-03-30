@@ -5,6 +5,7 @@ import { badRequestErrorHandler, genericErrorHandler, notfoundErrorHandler } fro
 import { pgConnect } from './db.js'
 import productsRouter from './products/index.js'
 import categoriesRouter from './categories/index.js'
+import reviewsRouter from './reviews/index.js'
 
 const server = Express()
 const port = process.env.PORT
@@ -15,6 +16,7 @@ server.use(Express.json())
 
 server.use("/products", productsRouter)
 server.use("/categories", categoriesRouter)
+server.use("/products", reviewsRouter)
 
 
 server.use(badRequestErrorHandler)

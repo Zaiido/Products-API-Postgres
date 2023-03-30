@@ -2,7 +2,7 @@ import sequelize from "../db.js";
 import { DataTypes } from "sequelize";
 import ProductsCategoriesModel from "./productsCategoriesModel.js";
 import CategoriesModel from "../categories/model.js";
-
+import ReviewsModel from "../reviews/model.js";
 
 const ProductsModel = sequelize.define("product",
     {
@@ -43,6 +43,11 @@ CategoriesModel.belongsToMany(ProductsModel, {
     through: ProductsCategoriesModel,
     foreignKey: { name: "categoryId", allowNull: false }
 })
+
+
+
+ProductsModel.hasMany(ReviewsModel)
+ReviewsModel.belongsTo(ProductsModel, { foreignKey: { name: "productId", allowNull: false } })
 
 
 export default ProductsModel
