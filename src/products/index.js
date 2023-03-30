@@ -5,6 +5,7 @@ import { Op } from 'sequelize'
 import ProductsCategoriesModel from './productsCategoriesModel.js'
 import CategoriesModel from '../categories/model.js'
 import ReviewsModel from '../reviews/model.js'
+import UsersModel from '../users/model.js'
 
 const productsRouter = Express.Router()
 
@@ -21,7 +22,9 @@ productsRouter.get("/", async (request, response, next) => {
             order: [request.query.columnToSort && request.query.sortDirection ? [request.query.columnToSort, request.query.sortDirection] : ["price", "ASC"]],
             offset: request.query.offset,
             limit: request.query.limit,
-            include: [{ model: CategoriesModel, attributes: ["name"], through: { attributes: [] } }, { model: ReviewsModel, attributes: ["content"] }]
+            include: [
+                { model: CategoriesModel, attributes: ["name"], through: { attributes: [] } },
+                { model: ReviewsModel, include: [{ model: UsersModel, attributes: ["name", "surname"] }], attributes: ["content"] }]
         })
 
         const prevOffset = parseInt(request.query.offset) - parseInt(request.query.limit)

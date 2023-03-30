@@ -1,6 +1,6 @@
 import sequelize from "../db.js";
 import { DataTypes } from "sequelize";
-
+import UsersModel from "../users/model.js";
 
 const ReviewsModel = sequelize.define("review",
     {
@@ -14,5 +14,8 @@ const ReviewsModel = sequelize.define("review",
         }
     })
 
+
+UsersModel.hasMany(ReviewsModel)
+ReviewsModel.belongsTo(UsersModel, { foreignKey: { name: "userId", allowNull: false }, })
 
 export default ReviewsModel
