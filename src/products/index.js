@@ -16,28 +16,23 @@ productsRouter.get("/", async (request, response, next) => {
         let whereClause = {};
 
 
-        if (seqQuery.criteria.minPrice && seqQuery.criteria.maxPrice) {
-            whereClause.price = { [Op.between]: [seqQuery.criteria.minPrice, seqQuery.criteria.maxPrice] };
-        }
-
         if (seqQuery.criteria.search) {
+            delete seqQuery.criteria.search
             whereClause = {
-                ...whereClause,
-                ...{ [Op.or]: [{ name: { [Op.iLike]: `%${seqQuery.criteria.search}%` } }, { description: { [Op.iLike]: `%${seqQuery.criteria.search}%` } }] }
-            }
+                ...seqQuery.criteria,
+                [Op.or]: [
+                    { name: { [Op.iLike]: `%${request.query.search}%` } },
+                    { description: { [Op.iLike]: `%${request.query.search}%` } }
+                ]
+            };
         }
 
-        if (Object.keys(whereClause).length === 0) {
-            whereClause = {
-                ...seqQuery.criteria
-            }
+        if (Reflect.ownKeys(whereClause).length === 0) {
+            whereClause = seqQuery.criteria;
         }
-
 
         const { count, rows } = await ProductsModel.findAndCountAll({
-            where: {
-                ...whereClause
-            },
+            where: whereClause,
             order: seqQuery.options.sort,
             offset: seqQuery.options.skip,
             limit: seqQuery.options.limit,
