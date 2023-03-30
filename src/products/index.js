@@ -6,38 +6,52 @@ import ProductsCategoriesModel from './productsCategoriesModel.js'
 import CategoriesModel from '../categories/model.js'
 import ReviewsModel from '../reviews/model.js'
 import UsersModel from '../users/model.js'
+import q2s from 'query-to-sequelize'
 
 const productsRouter = Express.Router()
 
 productsRouter.get("/", async (request, response, next) => {
     try {
-        const query = {}
-        if (request.query.minPrice && request.query.maxPrice) query.price = { [Op.between]: [request.query.minPrice, request.query.maxPrice] }
-        if (request.query.category) query.category = { [Op.iLike]: `%${request.query.category}%` }
+        const seqQuery = q2s(request.query)
+        let whereClause = {};
+
+
+        if (seqQuery.criteria.minPrice && seqQuery.criteria.maxPrice) {
+            whereClause.price = { [Op.between]: [seqQuery.criteria.minPrice, seqQuery.criteria.maxPrice] };
+        }
+
+        if (seqQuery.criteria.search) {
+            whereClause = {
+                ...whereClause,
+                ...{ [Op.or]: [{ name: { [Op.iLike]: `%${seqQuery.criteria.search}%` } }, { description: { [Op.iLike]: `%${seqQuery.criteria.search}%` } }] }
+            }
+        }
+
+        if (Object.keys(whereClause).length === 0) {
+            whereClause = {
+                ...seqQuery.criteria
+            }
+        }
+
+
         const { count, rows } = await ProductsModel.findAndCountAll({
             where: {
-                ...query,
-                ...request.query.search ? { [Op.or]: [{ name: { [Op.iLike]: `%${request.query.search}%` } }, { description: { [Op.iLike]: `%${request.query.search}%` } }] } : ''
+                ...whereClause
             },
-            order: [request.query.columnToSort && request.query.sortDirection ? [request.query.columnToSort, request.query.sortDirection] : ["price", "ASC"]],
-            offset: request.query.offset,
-            limit: request.query.limit,
+            order: seqQuery.options.sort,
+            offset: seqQuery.options.skip,
+            limit: seqQuery.options.limit,
             include: [
                 { model: CategoriesModel, attributes: ["name"], through: { attributes: [] } },
                 { model: ReviewsModel, include: [{ model: UsersModel, attributes: ["name", "surname"] }], attributes: ["content"] }]
         })
 
-        const prevOffset = parseInt(request.query.offset) - parseInt(request.query.limit)
-        const nextOffset = parseInt(request.query.offset) + parseInt(request.query.limit)
 
         response.send(
             {
                 total: count,
-                pages: Math.ceil(count / request.query.limit),
-                links: {
-                    prevLink: prevOffset >= 0 ? `${process.env.BE_URL}/products?limit=${request.query.limit}&offset=${prevOffset}` : null,
-                    nextLink: nextOffset <= count ? `${process.env.BE_URL}/products?limit=${request.query.limit}&offset=${nextOffset}` : null
-                },
+                pages: Math.ceil(count / seqQuery.limit),
+                links: seqQuery.links(`${process.env.BE_URL}/products`, count),
                 products: rows
             })
     } catch (error) {

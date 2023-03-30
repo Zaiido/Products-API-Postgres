@@ -17,6 +17,7 @@
     "express-list-endpoints": "^6.0.0",
     "http-errors": "^2.0.0",
     "pg": "^8.10.0",
+    "query-to-sequelize": "^0.1.1",
     "sequelize": "^6.30.0"
   },
   "devDependencies": {
