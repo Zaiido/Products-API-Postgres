@@ -2,6 +2,7 @@ import Express from 'express'
 import createHttpError from 'http-errors'
 import ProductsModel from './model.js'
 import { Op } from 'sequelize'
+import ProductsCategoriesModel from './productsCategoriesModel.js'
 
 const productsRouter = Express.Router()
 
@@ -42,6 +43,23 @@ productsRouter.get("/", async (request, response, next) => {
 productsRouter.post("/", async (request, response, next) => {
     try {
         const { id } = await ProductsModel.create(request.body)
+        if (request.body.categories) {
+            await ProductsCategoriesModel.bulkCreate(
+                request.body.categories.map(category => {
+                    return { productId: id, categoryId: category }
+                })
+            )
+        }
+        response.status(201).send({ id })
+    } catch (error) {
+        next(error)
+    }
+})
+
+// ADD CATEGORY TO EXISTING PRODUCT
+productsRouter.post("/:productId/categories", async (request, response, next) => {
+    try {
+        const { id } = await ProductsCategoriesModel.create({ productId: request.params.productId, categoryId: request.body.categoryId })
         response.status(201).send({ id })
     } catch (error) {
         next(error)

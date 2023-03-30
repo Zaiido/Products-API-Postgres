@@ -4,6 +4,7 @@ import cors from 'cors'
 import { badRequestErrorHandler, genericErrorHandler, notfoundErrorHandler } from './errorHandlers.js'
 import { pgConnect } from './db.js'
 import productsRouter from './products/index.js'
+import categoriesRouter from './categories/index.js'
 
 const server = Express()
 const port = process.env.PORT
@@ -13,6 +14,7 @@ server.use(Express.json())
 
 
 server.use("/products", productsRouter)
+server.use("/categories", categoriesRouter)
 
 
 server.use(badRequestErrorHandler)
